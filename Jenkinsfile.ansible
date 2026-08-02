@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         PROD_HOST = '139.100.237.220'
-        APP_DIR   = 'javatestcode-master'
     }
 
     stages {
@@ -15,27 +14,23 @@ pipeline {
 
         stage('Build') {
             steps {
-                dir(env.APP_DIR) {
-                    sh 'chmod +x mvnw'
-                    sh './mvnw clean package'
-                }
+                sh 'chmod +x mvnw'
+                sh './mvnw clean package'
             }
         }
 
         stage('Deploy') {
             steps {
-                dir(env.APP_DIR) {
-                    withCredentials([sshUserPrivateKey(
-                            credentialsId: 'deploy-prod-key',
-                            keyFileVariable: 'SSH_KEY')]) {
-                        sh '''
-                            set -e
-                            JAR=$(ls target/*.jar | grep -v original | head -n1)
-                            ansible-playbook ansible/deploy.yml \
-                                --private-key "$SSH_KEY" \
-                                --extra-vars "jar_path=$JAR"
-                        '''
-                    }
+                withCredentials([sshUserPrivateKey(
+                        credentialsId: 'deploy-prod-key',
+                        keyFileVariable: 'SSH_KEY')]) {
+                    sh '''
+                        set -e
+                        JAR=$(ls target/*.jar | grep -v original | head -n1)
+                        ansible-playbook ansible/deploy.yml \
+                            --private-key "$SSH_KEY" \
+                            --extra-vars "jar_path=$JAR"
+                    '''
                 }
             }
         }
