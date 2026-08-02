@@ -16,7 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class PageController {
 
     /** Intentionally not configurable. */
-    private static final Duration RESPONSE_DELAY = Duration.ofSeconds(1);
+    private static final Duration RESPONSE_DELAY = Duration.ofSeconds(12);
 
     private static final Resource PAGE = new ClassPathResource("web/index.html");
 
