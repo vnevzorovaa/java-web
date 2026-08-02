@@ -1,0 +1,16 @@
+- name: deploy to prod
+  hosts: prod
+  gather_facts: false
+
+  vars:
+    remote_jar: /opt/web/app.jar
+
+  tasks:
+    - name: copy jar to prod
+      ansible.builtin.copy:
+        src: "{{ jar_path }}"
+        dest: "{{ remote_jar }}"
+    - name: restarting web service
+      ansible.builtin.command: /usr/bin/systemctl restart web
+      become: true
+      changed_when: true

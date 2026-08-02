@@ -1,0 +1,60 @@
+pipeline {
+    agent any
+
+    environment {
+        PROD_HOST = '139.100.237.220'
+        APP_DIR   = 'javatestcode-master'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build') {
+            steps {
+                dir(env.APP_DIR) {
+                    sh 'chmod +x mvnw'
+                    sh './mvnw clean package'
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                dir(env.APP_DIR) {
+                    withCredentials([sshUserPrivateKey(
+                            credentialsId: 'deploy-prod-key',
+                            keyFileVariable: 'SSH_KEY')]) {
+                        sh '''
+                            set -e
+                            JAR=$(ls target/*.jar | grep -v original | head -n1)
+                            ansible-playbook ansible/deploy.yml \
+                                --private-key "$SSH_KEY" \
+                                --extra-vars "jar_path=$JAR"
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Verify') {
+            steps {
+                sh '''
+                    set -e
+                    for i in $(seq 1 10); do
+                        if curl -sf http://${PROD_HOST}/actuator/health/readiness | grep -q '"status":"UP"'; then
+                            echo "App is ready"
+                            break
+                        fi
+                        echo "Waiting for app to become ready..."
+                        sleep 2
+                    done
+                    curl -sf http://${PROD_HOST}/ -o /dev/null -w "GET / -> HTTP %{http_code}\\n"
+                '''
+            }
+        }
+    }
+}
