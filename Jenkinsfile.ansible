@@ -27,7 +27,7 @@ pipeline {
                     sh '''
                         set -e
                         JAR=$(readlink -f "$(ls target/*.jar | grep -v original | head -n1)")
-                        ansible-playbook ansible/deploy.yml \
+                        ansible-playbook -i -i ansible/inventory.ini ansible/deploy.yml \
                             --private-key "$SSH_KEY" \
                             --extra-vars "jar_path=$JAR"
                     '''
