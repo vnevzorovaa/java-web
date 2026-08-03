@@ -1,0 +1,71 @@
+pipeline {
+    agent any
+
+    parameters {
+        choice(
+            name: 'ACTION',
+            choices: ['deploy', 'rollback'],
+        )
+    }
+
+    environment {
+        PROD_HOST = '139.100.237.220'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build') {
+            when { expression { params.ACTION == 'deploy' } }
+            steps {
+                sh 'chmod +x mvnw'
+                sh './mvnw clean package'
+            }
+        }
+
+        stage('Deploy (blue/green)') {
+            when { expression { params.ACTION == 'deploy' } }
+            steps {
+                withCredentials([sshUserPrivateKey(
+                        credentialsId: 'deploy-prod-key',
+                        keyFileVariable: 'SSH_KEY')]) {
+                    sh '''
+                        set -e
+                        JAR=$(ls target/*.jar | grep -v original | head -n1)
+                        ansible-playbook -i ansible/inventory.ini ansible/deploy-bluegreen.yml \
+                            --private-key "$SSH_KEY" \
+                            --extra-vars "jar_path=$JAR"
+                    '''
+                }
+            }
+        }
+
+        stage('Rollback (blue/green)') {
+            when { expression { params.ACTION == 'rollback' } }
+            steps {
+                withCredentials([sshUserPrivateKey(
+                        credentialsId: 'deploy-prod-key',
+                        keyFileVariable: 'SSH_KEY')]) {
+                    sh '''
+                        set -e
+                        ansible-playbook -i ansible/inventory.ini ansible/rollback-bluegreen.yml \
+                            --private-key "$SSH_KEY"
+                    '''
+                }
+            }
+        }
+
+        stage('Verify') {
+            steps {
+                sh '''
+                    set -e
+                    curl -sf http://${PROD_HOST}:8090/ -o /dev/null -w "GET :8090/ -> HTTP %{http_code}\\n"
+                '''
+            }
+        }
+    }
+}
