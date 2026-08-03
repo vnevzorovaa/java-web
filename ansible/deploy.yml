@@ -11,6 +11,5 @@
         src: "{{ jar_path }}"
         dest: "{{ remote_jar }}"
     - name: restarting web service
-      ansible.builtin.command: /usr/bin/systemctl restart web
-      become: true
+      ansible.builtin.command: sudo /usr/bin/systemctl restart web
       changed_when: true
