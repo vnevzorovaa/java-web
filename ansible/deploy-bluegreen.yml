@@ -42,8 +42,7 @@
         dest: "{{ colors[target_color].jar }}"
 
     - name: restart the inactive instance with the new jar
-      ansible.builtin.command: "/usr/bin/systemctl restart {{ colors[target_color].service }}"
-      become: true
+      ansible.builtin.command: "sudo /usr/bin/systemctl restart {{ colors[target_color].service }}"
       changed_when: true
 
     - name: wait for the new instance to report readiness (bypassing nginx)
@@ -67,13 +66,11 @@
           }
 
     - name: validate nginx conf
-      ansible.builtin.command: /usr/sbin/nginx -t
-      become: true
+      ansible.builtin.command: sudo /usr/sbin/nginx -t
       changed_when: false
 
     - name: reload nginx to switch traffic
-      ansible.builtin.command: /usr/bin/systemctl reload nginx
-      become: true
+      ansible.builtin.command: sudo /usr/bin/systemctl reload nginx
       changed_when: true
 
     - name: confirm the switch
