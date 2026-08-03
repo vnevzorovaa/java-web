@@ -1,0 +1,77 @@
+- name: rollback blue-green switch to the previous "color"
+  hosts: prod
+  gather_facts: false
+
+  vars:
+    upstream_conf: /etc/nginx/conf.d/app_upstream.conf
+    colors:
+      blue:
+        service: web
+        port: 8080
+      green:
+        service: web-green
+        port: 8081
+
+  tasks:
+    - name: read nginx upstream config
+      ansible.builtin.slurp:
+        src: "{{ upstream_conf }}"
+      register: upstream_raw
+
+    - name: determine the active port
+      ansible.builtin.set_fact:
+        active_port: >-
+          {{ (upstream_raw.content | b64decode) | regex_search('server 127\.0\.0\.1:([0-9]+)', '\1') | first }}
+
+    - name: determine active "color" and rollback
+      ansible.builtin.set_fact:
+        active_color: "{{ 'blue' if active_port == (colors.blue.port | string) else 'green' }}"
+        rollback_color: "{{ 'green' if active_port == (colors.blue.port | string) else 'blue' }}"
+
+    - name: show rollback plan
+      ansible.builtin.debug:
+        msg: "Currently live: {{ active_color }}. Rolling back to: {{ rollback_color }}."
+
+    - name: confirm that the rollback target is running
+      ansible.builtin.command: "/usr/bin/systemctl restart {{ colors[rollback_color].service }}"
+      become: true
+      changed_when: true
+
+    - name: wait for the rollback target to report readiness
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ colors[rollback_color].port }}/actuator/health/readiness"
+        status_code: 200
+        return_content: true
+      register: readiness_check
+      until: >-
+        readiness_check.status == 200 and
+        (readiness_check.json.status | default('')) == 'UP'
+      retries: 15
+      delay: 2
+
+    - name: point nginx upstream back to tha previous "color"
+      ansible.builtin.copy:
+        dest: "{{ upstream_conf }}"
+        content: |
+          upstream app_web {
+              server 127.0.0.1:{{ colors[rollback_color].port }};
+          }
+
+    - name: validate nginx conf
+      ansible.builtin.command: /usr/sbin/nginx -t
+      become: true
+      changed_when: false
+
+    - name: reload nginx
+      ansible.builtin.command: /usr/bin/systemctl reload nginx
+      become: true
+      changed_when: true
+
+    - name: confirm rollback
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:8090/"
+        status_code: 200
+      register: final_check
+      until: final_check.status == 200
+      retries: 5
+      delay: 3
