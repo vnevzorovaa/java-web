@@ -9,8 +9,8 @@ After=network.target
 [Service]
 Type=simple
 User=web
-WorkingDirectory=/opt/api
-ExecStart=/usr/lib/jvm/java-21-openjdk-amd64/bin/java
+WorkingDirectory=/opt/web
+ExecStart=/usr/lib/jvm/java-21-openjdk-amd64/bin/java -jar /opt/web/app.jar
 Restart=on-failure
 RestartSec=5
 Environment="SERVER_ADDRESS=127.0.0.1"
@@ -76,3 +76,49 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
+
+
+systemctl status web web-green
+● web.service - Java Web
+     Loaded: loaded (/etc/systemd/system/web.service; enabled; preset: enabled)
+     Active: active (running) since Mon 2026-08-03 20:29:19 UTC; 11min ago
+ Invocation: 0dc47ce5228247a191a33e7abb8a8c05
+   Main PID: 112391 (java)
+      Tasks: 26 (limit: 4650)
+     Memory: 154.7M (peak: 156.6M)
+        CPU: 9.615s
+     CGroup: /system.slice/web.service
+             └─112391 /usr/lib/jvm/java-21-openjdk-amd64/bin/java -jar /opt/web/app.jar
+
+Aug 03 20:29:22 devops-test-2-2 java[112391]: 2026-08-03T20:29:22.542Z  INFO 112391 --- [           main] o.s.boot.tomcat.TomcatWebServer      >
+Aug 03 20:29:22 devops-test-2-2 java[112391]: 2026-08-03T20:29:22.561Z  INFO 112391 --- [           main] o.apache.catalina.core.StandardServic>
+Aug 03 20:29:22 devops-test-2-2 java[112391]: 2026-08-03T20:29:22.562Z  INFO 112391 --- [           main] o.apache.catalina.core.StandardEngine>
+Aug 03 20:29:22 devops-test-2-2 java[112391]: 2026-08-03T20:29:22.589Z  INFO 112391 --- [           main] b.w.c.s.WebApplicationContextInitiali>
+Aug 03 20:29:23 devops-test-2-2 java[112391]: 2026-08-03T20:29:23.337Z  INFO 112391 --- [           main] o.s.b.a.e.web.EndpointLinksResolver  >
+Aug 03 20:29:23 devops-test-2-2 java[112391]: 2026-08-03T20:29:23.415Z  INFO 112391 --- [           main] o.s.boot.tomcat.TomcatWebServer      >
+Aug 03 20:29:23 devops-test-2-2 java[112391]: 2026-08-03T20:29:23.429Z  INFO 112391 --- [           main] ru.ptr.DevopsTestTaskApplication     >
+Aug 03 20:29:24 devops-test-2-2 java[112391]: 2026-08-03T20:29:24.830Z  INFO 112391 --- [omcat-handler-0] o.a.c.c.C.[Tomcat].[localhost].[/]   >
+Aug 03 20:29:24 devops-test-2-2 java[112391]: 2026-08-03T20:29:24.832Z  INFO 112391 --- [omcat-handler-0] o.s.web.servlet.DispatcherServlet    >
+Aug 03 20:29:24 devops-test-2-2 java[112391]: 2026-08-03T20:29:24.833Z  INFO 112391 --- [omcat-handler-0] o.s.web.servlet.DispatcherServlet    >
+
+● web-green.service - Java Web green deploy
+     Loaded: loaded (/etc/systemd/system/web-green.service; enabled; preset: enabled)
+     Active: active (running) since Mon 2026-08-03 20:22:04 UTC; 18min ago
+ Invocation: ff99110a9f7f4f70a5adf39fd1b74422
+   Main PID: 112075 (java)
+      Tasks: 26 (limit: 4650)
+     Memory: 154.1M (peak: 157.7M)
+        CPU: 10.121s
+     CGroup: /system.slice/web-green.service
+             └─112075 /usr/lib/jvm/java-21-openjdk-amd64/bin/java -jar /opt/web-green/app.jar
+
+Aug 03 20:22:07 devops-test-2-2 java[112075]: 2026-08-03T20:22:07.540Z  INFO 112075 --- [           main] o.s.boot.tomcat.TomcatWebServer      >
+Aug 03 20:22:07 devops-test-2-2 java[112075]: 2026-08-03T20:22:07.560Z  INFO 112075 --- [           main] o.apache.catalina.core.StandardServic>
+Aug 03 20:22:07 devops-test-2-2 java[112075]: 2026-08-03T20:22:07.561Z  INFO 112075 --- [           main] o.apache.catalina.core.StandardEngine>
+Aug 03 20:22:07 devops-test-2-2 java[112075]: 2026-08-03T20:22:07.591Z  INFO 112075 --- [           main] b.w.c.s.WebApplicationContextInitiali>
+Aug 03 20:22:08 devops-test-2-2 java[112075]: 2026-08-03T20:22:08.326Z  INFO 112075 --- [           main] o.s.b.a.e.web.EndpointLinksResolver  >
+Aug 03 20:22:08 devops-test-2-2 java[112075]: 2026-08-03T20:22:08.422Z  INFO 112075 --- [           main] o.s.boot.tomcat.TomcatWebServer      >
+Aug 03 20:22:08 devops-test-2-2 java[112075]: 2026-08-03T20:22:08.435Z  INFO 112075 --- [           main] ru.ptr.DevopsTestTaskApplication     >
+Aug 03 20:22:09 devops-test-2-2 java[112075]: 2026-08-03T20:22:09.909Z  INFO 112075 --- [omcat-handler-0] o.a.c.c.C.[Tomcat].[localhost].[/]   >
+Aug 03 20:22:09 devops-test-2-2 java[112075]: 2026-08-03T20:22:09.910Z  INFO 112075 --- [omcat-handler-0] o.s.web.servlet.DispatcherServlet    >
+Aug 03 20:22:09 devops-test-2-2 java[112075]: 2026-08-03T20:22:09.912Z  INFO 112075 --- [omcat-handler-0] o.s.web.servlet.DispatcherServlet    >
