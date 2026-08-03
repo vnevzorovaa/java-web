@@ -1,0 +1,78 @@
+# unit files and nginx configs
+
+# first unit-file, "blue part" (from the none excellent task)
+
+[Unit]
+Description=Java Web
+After=network.target
+
+[Service]
+Type=simple
+User=web
+WorkingDirectory=/opt/api
+ExecStart=/usr/lib/jvm/java-21-openjdk-amd64/bin/java
+Restart=on-failure
+RestartSec=5
+Environment="SERVER_ADDRESS=127.0.0.1"
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+
+
+# nginx from the first task (without blue-green deploy logic)
+
+server {
+    listen 80;
+    server_name _;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+
+# second unit-file for green deployment
+
+[Unit]
+Description=Java Web green deploy
+After=network.target
+
+[Service]
+Type=simple
+User=web
+WorkingDirectory=/opt/web-green
+ExecStart=/usr/lib/jvm/java-21-openjdk-amd64/bin/java -jar /opt/web-green/app.jar
+Restart=on-failure
+RestartSec=5
+Environment="SERVER_ADDRESS=127.0.0.1" "SERVER_PORT=8081"
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+
+
+# second nginx conf with blue-green logic
+
+server {
+    listen 8090;
+    server_name _;
+
+    location / {
+        proxy_pass http://app_web;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
